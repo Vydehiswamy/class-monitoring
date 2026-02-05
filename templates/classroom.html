@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>📹 Classroom Monitoring (Debug Mode)</h2>
+
+<video id="video" width="640" height="480" autoplay></video>
+<canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+
+<p id="status">Waiting...</p>
+<ul id="log"></ul>
+
+<script>
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const log = document.getElementById("log");
+const statusText = document.getElementById("status");
+
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => video.srcObject = stream)
+.catch(err => alert("Camera error: " + err));
+
+setInterval(() => {
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    fetch("/process-classroom-frame", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            image: canvas.toDataURL("image/jpeg")
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        statusText.innerText = "Frame processed ✔";
+
+        log.innerHTML = "";
+        if (data.result && data.result.length > 0) {
+            data.result.forEach(r => {
+                log.innerHTML += `
+                  <li>
+                    👤 ${r.person} |
+                    😊 ${r.emotion} |
+                    📱 ${r.mobile} |
+                    🎯 ${r.listening}
+                  </li>`;
+            });
+        } else {
+            log.innerHTML = "<li>No faces detected</li>";
+        }
+    })
+    .catch(err => {
+        statusText.innerText = "ERROR";
+        console.error(err);
+    });
+
+}, 2000);
+</script>
+
+{% endblock %}

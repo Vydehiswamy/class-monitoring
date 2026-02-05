@@ -1,0 +1,38 @@
+# -------- Core Framework --------
+Flask
+Werkzeug
+
+# -------- Database --------
+Flask
+Werkzeug
+opencv-python
+numpy
+pandas
+
+
+# -------- Computer Vision --------
+opencv-python
+face-recognition
+dlib
+numpy
+imutils
+
+# -------- YOLO Object Detection --------
+ultralytics
+
+# -------- Emotion Detection --------
+tensorflow
+keras
+
+# -------- Image Processing --------
+Pillow
+
+# -------- Email --------
+secure-smtplib
+
+# -------- Utilities --------
+python-dotenv
+pandas
+
+# -------- Security --------
+bcrypt

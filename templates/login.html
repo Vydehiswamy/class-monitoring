@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card" style="max-width: 450px; margin: 5rem auto;">
+    <div class="card-header" style="background: linear-gradient(to right, #1e3c72, #2a5298); color: white; border-radius: 8px 8px 0 0; padding: 1.5rem; margin: -2rem -2rem 2rem -2rem;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: rgba(255, 255, 255, 0.2); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-sign-in-alt" style="font-size: 2rem;"></i>
+            </div>
+            <div>
+                <h2 style="margin: 0; font-size: 1.8rem;">Admin Login</h2>
+                <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 0.9rem;">Access Classroom Dashboard</p>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="alert alert-warning" style="background: #fff3cd; color: #856404; padding: 1rem; border-radius: 6px; border-left: 4px solid #ffc107; margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>
+                        {% for message in messages %}
+                            <p style="margin: 0;">{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <form method="post">
+        <div class="form-group">
+            <label class="form-label" style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem; font-weight: 600; color: #333;">
+                <i class="fas fa-envelope" style="color: #1e3c72;"></i>
+                Email Address
+            </label>
+            <div style="position: relative;">
+                <input type="email" name="email" placeholder="admin@college.edu" required
+                       class="form-control" style="padding-left: 45px;" value="{{ request.form.email if request.form.email else '' }}">
+                <i class="fas fa-envelope" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem; font-weight: 600; color: #333;">
+                <i class="fas fa-lock" style="color: #1e3c72;"></i>
+                Password
+            </label>
+            <div style="position: relative;">
+                <input type="password" name="password" placeholder="Enter your password" required
+                       class="form-control" style="padding-left: 45px;" id="password">
+                <i class="fas fa-lock" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
+                <button type="button" onclick="togglePassword()" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #6c757d; cursor: pointer;">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+            <div style="text-align: right; margin-top: 0.5rem;">
+                <a href="#" style="color: #1e3c72; text-decoration: none; font-size: 0.9rem; font-weight: 500;">
+                    <i class="fas fa-key"></i>
+                    Forgot Password?
+                </a>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" name="remember" style="width: 18px; height: 18px; accent-color: #1e3c72;">
+                    <span style="font-size: 0.95rem; color: #495057;">Remember me</span>
+                </label>
+                <div style="font-size: 0.9rem; color: #6c757d;">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Secure Login</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin: 2rem 0;">
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem; border-radius: 8px; background: linear-gradient(to right, #1e3c72, #2a5298); border: none; transition: all 0.3s ease;">
+                <i class="fas fa-sign-in-alt"></i>
+                Login to Dashboard
+            </button>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: center; margin: 1.5rem 0;">
+                <div style="flex: 1; height: 1px; background: #e0e0e0;"></div>
+                <div style="padding: 0 1rem; color: #6c757d; font-size: 0.9rem;">Or continue with</div>
+                <div style="flex: 1; height: 1px; background: #e0e0e0;"></div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button type="button" style="padding: 0.8rem 1.5rem; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s ease;">
+                    <i class="fab fa-google" style="color: #DB4437;"></i>
+                    <span>Google</span>
+                </button>
+                <button type="button" style="padding: 0.8rem 1.5rem; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s ease;">
+                    <i class="fab fa-microsoft" style="color: #00A4EF;"></i>
+                    <span>Microsoft</span>
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e0e0e0;">
+        <p style="text-align: center; margin-bottom: 0; color: #495057;">
+            <i class="fas fa-user-plus" style="margin-right: 8px;"></i>
+            Don't have an account?
+            <a href="{{ url_for('register') }}" style="color: #1e3c72; text-decoration: none; font-weight: 600; margin-left: 8px;">
+                <i class="fas fa-user-plus"></i>
+                Create Account
+            </a>
+        </p>
+    </div>
+</div>
+
+<div style="text-align: center; margin-top: 3rem; color: #6c757d; font-size: 0.9rem;">
+    <div style="display: inline-flex; align-items: center; gap: 20px; flex-wrap: wrap; justify-content: center;">
+        <span><i class="fas fa-university"></i> Smart Classroom Monitoring</span>
+        <span><i class="fas fa-chart-line"></i> Real-time Analytics</span>
+        <span><i class="fas fa-video"></i> AI Face Recognition</span>
+    </div>
+</div>
+
+<style>
+.form-control {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #1e3c72;
+    box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(30, 60, 114, 0.2);
+}
+
+button[type="button"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+</style>
+
+<script>
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const eyeIcon = event.currentTarget.querySelector('i');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeIcon.className = 'fas fa-eye-slash';
+    } else {
+        passwordInput.type = 'password';
+        eyeIcon.className = 'fas fa-eye';
+    }
+}
+
+// Demo credentials hint
+document.addEventListener('DOMContentLoaded', function() {
+    const emailField = document.querySelector('input[name="email"]');
+    const passwordField = document.getElementById('password');
+    
+    // Add focus effects
+    emailField.addEventListener('focus', function() {
+        this.parentElement.style.borderRadius = '6px';
+        this.parentElement.style.boxShadow = '0 0 0 3px rgba(30, 60, 114, 0.1)';
+    });
+    
+    emailField.addEventListener('blur', function() {
+        this.parentElement.style.boxShadow = 'none';
+    });
+    
+    passwordField.addEventListener('focus', function() {
+        this.parentElement.style.boxShadow = '0 0 0 3px rgba(30, 60, 114, 0.1)';
+    });
+    
+    passwordField.addEventListener('blur', function() {
+        this.parentElement.style.boxShadow = 'none';
+    });
+    
+    // Add demo credentials placeholder on click (for development)
+    emailField.addEventListener('click', function() {
+        if (this.value === '' && window.location.hostname === 'localhost') {
+            this.value = 'admin@college.edu';
+            passwordField.value = 'password123';
+        }
+    });
+});
+</script>
+
+{% endblock %}

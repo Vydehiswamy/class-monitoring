@@ -1,0 +1,664 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-chart-line"></i>
+        <h2>📊 Classroom Analytics Dashboard</h2>
+        <div style="margin-left: auto; font-size: 0.9rem; color: #6c757d;">
+            <i class="fas fa-calendar-alt"></i>
+            Last Updated: 
+            {% if current_time %}
+                {{ current_time.strftime('%Y-%m-%d %H:%M:%S') }}
+            {% else %}
+                Today
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon present">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="stat-content">
+                <h3 id="presentCount">Loading...</h3>
+                <p>Students Present</p>
+                <small style="color: #6c757d; font-size: 0.85rem;">
+                    <i class="fas fa-clock"></i> Today
+                </small>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon absent">
+                <i class="fas fa-user-times"></i>
+            </div>
+            <div class="stat-content">
+                <h3 id="absentCount">Loading...</h3>
+                <p>Students Absent</p>
+                <small style="color: #6c757d; font-size: 0.85rem;">
+                    <i class="fas fa-clock"></i> Today
+                </small>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon attention">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div class="stat-content">
+                <h3 id="avgAttention">Loading...</h3>
+                <p>Average Attention</p>
+                <small style="color: #6c757d; font-size: 0.85rem;">
+                    <i class="fas fa-users"></i> <span id="studentCount">0</span> students
+                </small>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon phone">
+                <i class="fas fa-mobile-alt"></i>
+            </div>
+            <div class="stat-content">
+                <h3 id="phoneUsage">Loading...</h3>
+                <p>Phone Usage</p>
+                <small style="color: #6c757d; font-size: 0.85rem;">
+                    <i class="fas fa-exclamation-triangle"></i> <span id="phoneStatus">Normal</span>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-chart-bar"></i>
+        <h3>📈 Attendance Overview</h3>
+        <div style="margin-left: auto;">
+            <button onclick="loadDashboardData()" class="btn btn-sm btn-primary">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+    <div style="padding: 1rem;">
+        <canvas id="attendanceChart" height="100"></canvas>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-mobile-alt"></i>
+        <h3>📱 Phone Usage Distribution</h3>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; padding: 1rem;">
+        <div>
+            <div id="phoneAlert" class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <span>Real-time Phone Usage: <strong id="phoneUsageText">0</strong>%</span>
+                <div id="phoneAlertDetail" style="margin-top: 5px; font-size: 0.9rem;"></div>
+            </div>
+            <canvas id="phoneChart"></canvas>
+        </div>
+        <div>
+            <h4>Usage Statistics</h4>
+            <div id="phoneStats" style="margin-top: 1rem;">
+                <div style="margin-bottom: 1rem;">
+                    <strong>Detection Rate:</strong> 
+                    <div style="background: #e9ecef; border-radius: 4px; height: 20px; margin-top: 5px;">
+                        <div id="phoneUsageBar" style="width: 0%; background: #fd7e14; height: 100%; border-radius: 4px;"></div>
+                    </div>
+                    <small id="phoneUsageDesc">0% of students using phones</small>
+                </div>
+                <div>
+                    <strong>Recommendation:</strong>
+                    <div id="phoneRecommendation" class="alert alert-info" style="margin-top: 5px; padding: 0.5rem;">
+                        <i class="fas fa-info-circle"></i>
+                        Loading recommendations...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-user-graduate"></i>
+        <h3>🎯 Student Performance</h3>
+        <div style="margin-left: auto; font-size: 0.9rem;">
+            <span style="color: #28a745;"><i class="fas fa-circle"></i> Good (>70%)</span>
+            <span style="color: #ffc107; margin-left: 10px;"><i class="fas fa-circle"></i> Average (40-70%)</span>
+            <span style="color: #dc3545; margin-left: 10px;"><i class="fas fa-circle"></i> Low (<40%)</span>
+        </div>
+    </div>
+    
+    <div style="padding: 1rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+            <div>
+                <h4>Individual Attention Scores</h4>
+                <small>Based on listening activity and emotional engagement</small>
+            </div>
+            <div>
+                <select id="sortBy" onchange="sortStudents()" class="form-select" style="width: 200px;">
+                    <option value="name">Sort by Name</option>
+                    <option value="score-high">Score: High to Low</option>
+                    <option value="score-low">Score: Low to High</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="attentionGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; min-height: 200px;">
+            <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #6c757d;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                <p>Loading student data...</p>
+            </div>
+        </div>
+        
+        <div style="margin-top: 2rem;">
+            <canvas id="attentionChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-clock"></i>
+        <h3>⏰ Recent Activity Timeline</h3>
+    </div>
+    <div id="timeline" style="padding: 1rem;">
+        <div style="text-align: center; padding: 2rem; color: #6c757d;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+            <p>Loading timeline...</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.student-score-card {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.3s ease;
+}
+
+.student-score-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.student-avatar-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.score-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: white;
+}
+
+.score-good {
+    background: linear-gradient(135deg, #28a745, #20c997);
+}
+
+.score-average {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+}
+
+.score-low {
+    background: linear-gradient(135deg, #dc3545, #e83e8c);
+}
+
+.stat-card {
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+</style>
+
+<script>
+// Global chart instances
+let attendanceChart = null;
+let phoneChart = null;
+let attentionChart = null;
+
+// Load dashboard data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+});
+
+function loadDashboardData() {
+    // Show loading state
+    document.querySelectorAll('.stat-card h3').forEach(el => {
+        el.textContent = '...';
+    });
+    
+    fetch('/dashboard-data')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Dashboard data loaded:', data);
+            updateDashboard(data);
+        })
+        .catch(error => {
+            console.error('Error loading dashboard data:', error);
+            // Use sample data as fallback
+            const sampleData = {
+                attendance: { present: 8, absent: 16, late: 2, early_leave: 1 },
+                phone_usage: 35,
+                attention_scores: {
+                    "student1": 88, "student2": 75, "student3": 92, "student4": 68,
+                    "student5": 55, "student6": 58, "student7": 45, "student8": 78,
+                    "student9": 62, "student10": 80, "student11": 65, "student12": 72,
+                    "student13": 90, "student14": 85, "student15": 78, "student16": 65,
+                    "student17": 90, "student18": 82, "student19": 70, "student20": 85,
+                    "student21": 75, "student22": 72, "student23": 88, "student24": 82
+                },
+                timeline: [
+                    { time: "09:00", event: "Class started with 24 students", type: "class" },
+                    { time: "09:15", event: "Attendance marked: 8 present, 16 absent", type: "attendance" },
+                    { time: "09:30", event: "Lecture on AI in Education", type: "class" },
+                    { time: "10:00", event: "High phone usage detected (35%)", type: "warning" },
+                    { time: "10:30", event: "Break time", type: "break" },
+                    { time: "10:45", event: "Class resumed", type: "class" }
+                ]
+            };
+            updateDashboard(sampleData);
+            
+            // Show warning
+            showMessage('Using sample data. Real data unavailable.', 'warning');
+        });
+}
+
+function updateDashboard(data) {
+    if (!data) return;
+    
+    // Update stats
+    updateStats(data);
+    
+    // Update charts
+    updateCharts(data);
+    
+    // Update student grid
+    updateStudentGrid(data.attention_scores || {});
+    
+    // Update timeline
+    updateTimeline(data.timeline || []);
+}
+
+function updateStats(data) {
+    // Update present count
+    document.getElementById('presentCount').textContent = data.attendance?.present || 0;
+    
+    // Update absent count
+    document.getElementById('absentCount').textContent = data.attendance?.absent || 0;
+    
+    // Update phone usage
+    const phoneUsage = data.phone_usage || 0;
+    document.getElementById('phoneUsage').textContent = phoneUsage + '%';
+    document.getElementById('phoneUsageText').textContent = phoneUsage;
+    document.getElementById('phoneUsageBar').style.width = phoneUsage + '%';
+    document.getElementById('phoneUsageDesc').textContent = phoneUsage + '% of students using phones';
+    
+    // Update phone status
+    const phoneStatus = document.getElementById('phoneStatus');
+    if (phoneUsage > 30) {
+        phoneStatus.textContent = 'High';
+        phoneStatus.style.color = '#dc3545';
+    } else {
+        phoneStatus.textContent = 'Normal';
+        phoneStatus.style.color = '#28a745';
+    }
+    
+    // Update average attention
+    if (data.attention_scores) {
+        const scores = Object.values(data.attention_scores);
+        const avg = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b) / scores.length) : 0;
+        document.getElementById('avgAttention').textContent = avg + '%';
+        document.getElementById('studentCount').textContent = scores.length;
+    }
+    
+    // Update phone alert
+    const phoneAlert = document.getElementById('phoneAlert');
+    const phoneAlertDetail = document.getElementById('phoneAlertDetail');
+    const phoneRecommendation = document.getElementById('phoneRecommendation');
+    
+    if (phoneUsage > 30) {
+        phoneAlert.className = 'alert alert-warning';
+        phoneAlert.querySelector('i').className = 'fas fa-exclamation-triangle';
+        phoneAlertDetail.innerHTML = '<i class="fas fa-info-circle"></i> High usage detected - consider intervention';
+        
+        phoneRecommendation.className = 'alert alert-warning';
+        phoneRecommendation.innerHTML = `
+            <i class="fas fa-exclamation-triangle"></i>
+            High phone usage detected. Consider implementing phone-free zones or reminders.
+        `;
+    } else {
+        phoneAlert.className = 'alert alert-success';
+        phoneAlert.querySelector('i').className = 'fas fa-check-circle';
+        phoneAlertDetail.innerHTML = '';
+        
+        phoneRecommendation.className = 'alert alert-info';
+        phoneRecommendation.innerHTML = `
+            <i class="fas fa-check-circle"></i>
+            Phone usage is at acceptable levels. Good classroom management!
+        `;
+    }
+}
+
+function updateCharts(data) {
+    // Destroy existing charts
+    if (attendanceChart) attendanceChart.destroy();
+    if (phoneChart) phoneChart.destroy();
+    if (attentionChart) attentionChart.destroy();
+    
+    // Attendance Chart
+    const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+    attendanceChart = new Chart(attendanceCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Present', 'Absent', 'Late', 'Early Leave'],
+            datasets: [{
+                label: 'Students',
+                data: [
+                    data.attendance?.present || 0,
+                    data.attendance?.absent || 0,
+                    data.attendance?.late || 0,
+                    data.attendance?.early_leave || 0
+                ],
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.8)',
+                    'rgba(220, 53, 69, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(108, 117, 125, 0.8)'
+                ],
+                borderColor: [
+                    'rgb(40, 167, 69)',
+                    'rgb(220, 53, 69)',
+                    'rgb(255, 193, 7)',
+                    'rgb(108, 117, 125)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `Today's Attendance (Total: ${(data.attendance?.present || 0) + (data.attendance?.absent || 0)} students)`
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Students'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Phone Usage Chart
+    const phoneCtx = document.getElementById('phoneChart').getContext('2d');
+    const phoneUsage = data.phone_usage || 0;
+    phoneChart = new Chart(phoneCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Using Phone', 'Not Using Phone'],
+            datasets: [{
+                data: [phoneUsage, 100 - phoneUsage],
+                backgroundColor: [
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(40, 167, 69, 0.8)'
+                ],
+                borderColor: [
+                    'rgb(255, 193, 7)',
+                    'rgb(40, 167, 69)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `Phone Usage: ${phoneUsage}%`
+                }
+            }
+        }
+    });
+    
+    // Attention Chart
+    if (data.attention_scores && Object.keys(data.attention_scores).length > 0) {
+        const attentionCtx = document.getElementById('attentionChart').getContext('2d');
+        const students = Object.keys(data.attention_scores);
+        const scores = Object.values(data.attention_scores);
+        
+        // Sort by score
+        const combined = students.map((student, i) => ({student, score: scores[i]}));
+        combined.sort((a, b) => b.score - a.score);
+        
+        attentionChart = new Chart(attentionCtx, {
+            type: 'bar',
+            data: {
+                labels: combined.map(item => item.student),
+                datasets: [{
+                    label: 'Attention Score',
+                    data: combined.map(item => item.score),
+                    backgroundColor: combined.map(item => 
+                        item.score >= 70 ? 'rgba(40, 167, 69, 0.8)' :
+                        item.score >= 40 ? 'rgba(255, 193, 7, 0.8)' :
+                        'rgba(220, 53, 69, 0.8)'
+                    ),
+                    borderColor: combined.map(item => 
+                        item.score >= 70 ? 'rgb(40, 167, 69)' :
+                        item.score >= 40 ? 'rgb(255, 193, 7)' :
+                        'rgb(220, 53, 69)'
+                    ),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Student Attention Scores (Sorted High to Low)'
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Attention Score (%)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+function updateStudentGrid(attentionScores) {
+    const grid = document.getElementById('attentionGrid');
+    if (!grid) return;
+    
+    if (Object.keys(attentionScores).length === 0) {
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #6c757d;">
+                <i class="fas fa-chart-bar" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                <p>No attention data available. Start classroom monitoring to collect data.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    for (const [student, score] of Object.entries(attentionScores)) {
+        const scoreClass = score >= 70 ? 'score-good' : score >= 40 ? 'score-average' : 'score-low';
+        const barColor = score >= 70 ? '#28a745' : score >= 40 ? '#ffc107' : '#dc3545';
+        
+        html += `
+            <div class="student-score-card" data-score="${score}" data-name="${student}">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="student-avatar-small">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <strong>${student}</strong>
+                    </div>
+                    <div class="score-badge ${scoreClass}">
+                        ${score}%
+                    </div>
+                </div>
+                <div style="background: #e9ecef; height: 6px; border-radius: 3px; overflow: hidden;">
+                    <div style="width: ${score}%; height: 100%; background: ${barColor};"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #6c757d; margin-top: 5px;">
+                    <span>Attention</span>
+                    <span>${score}/100</span>
+                </div>
+            </div>
+        `;
+    }
+    
+    grid.innerHTML = html;
+}
+
+function updateTimeline(timeline) {
+    const timelineElement = document.getElementById('timeline');
+    if (!timelineElement) return;
+    
+    if (timeline.length === 0) {
+        timelineElement.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: #6c757d;">
+                <i class="fas fa-history" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                <p>No recent activity to display</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    timeline.forEach((item, index) => {
+        const typeColors = {
+            'class': '#1e3c72',
+            'attendance': '#28a745',
+            'break': '#fd7e14',
+            'warning': '#dc3545'
+        };
+        
+        const typeIcons = {
+            'class': 'fa-chalkboard-teacher',
+            'attendance': 'fa-clipboard-check',
+            'break': 'fa-coffee',
+            'warning': 'fa-exclamation-triangle'
+        };
+        
+        const color = typeColors[item.type] || '#6c757d';
+        const icon = typeIcons[item.type] || 'fa-circle';
+        
+        html += `
+            <div style="display: flex; align-items: flex-start; padding: 1rem; border-bottom: 1px solid #eee; position: relative;">
+                <div style="position: relative; width: 100px;">
+                    <div style="background: ${color}; color: white; padding: 0.5rem; border-radius: 4px; text-align: center;">
+                        ${item.time}
+                    </div>
+                    ${index < timeline.length - 1 ? 
+                        '<div style="position: absolute; left: 50px; top: 100%; height: 1.5rem; width: 2px; background: #dee2e6; transform: translateX(-50%);"></div>' : 
+                        ''}
+                </div>
+                <div style="margin-left: 1rem; flex: 1; padding-top: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.25rem;">
+                        <i class="fas ${icon}" style="color: ${color};"></i>
+                        <strong>${item.event}</strong>
+                    </div>
+                    <div style="font-size: 0.85rem; color: #6c757d;">
+                        ${item.type.charAt(0).toUpperCase() + item.type.slice(1)} Activity
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    timelineElement.innerHTML = html;
+}
+
+function sortStudents() {
+    const sortBy = document.getElementById('sortBy').value;
+    const grid = document.getElementById('attentionGrid');
+    const cards = Array.from(grid.querySelectorAll('.student-score-card'));
+    
+    cards.sort((a, b) => {
+        const scoreA = parseInt(a.getAttribute('data-score')) || 0;
+        const scoreB = parseInt(b.getAttribute('data-score')) || 0;
+        const nameA = a.getAttribute('data-name') || '';
+        const nameB = b.getAttribute('data-name') || '';
+        
+        if (sortBy === 'name') {
+            return nameA.localeCompare(nameB);
+        } else if (sortBy === 'score-high') {
+            return scoreB - scoreA;
+        } else if (sortBy === 'score-low') {
+            return scoreA - scoreB;
+        }
+        return 0;
+    });
+    
+    grid.innerHTML = '';
+    cards.forEach(card => grid.appendChild(card));
+}
+
+function showMessage(message, type = 'info') {
+    const alertClass = type === 'warning' ? 'alert-warning' : 'alert-info';
+    const icon = type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `alert ${alertClass}`;
+    messageDiv.style.margin = '1rem';
+    messageDiv.innerHTML = `
+        <i class="fas ${icon}"></i>
+        ${message}
+        <button onclick="this.parentElement.remove()" class="btn btn-sm btn-${type === 'warning' ? 'warning' : 'info'}" style="margin-left: 10px;">
+            <i class="fas fa-times"></i> Dismiss
+        </button>
+    `;
+    
+    const container = document.querySelector('.container');
+    if (container && container.firstChild) {
+        container.insertBefore(messageDiv, container.firstChild);
+    }
+}
+
+// Auto-refresh every 60 seconds
+setInterval(() => {
+    if (!document.hidden) {
+        loadDashboardData();
+    }
+}, 60000);
+</script>
+{% endblock %}

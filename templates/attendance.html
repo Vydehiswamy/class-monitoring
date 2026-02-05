@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-clipboard-check"></i>
+        <h2>Student Attendance System</h2>
+    </div>
+
+    <div class="alert alert-warning">
+        <i class="fas fa-info-circle"></i>
+        <span>Select a student and capture their face for attendance marking</span>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">
+            <i class="fas fa-user-graduate"></i>
+            Select Student
+        </label>
+        <div class="student-selector">
+            {% for i in range(1,24) %}
+            <div class="student-card" onclick="selectStudent('student{{ i }}')" 
+                 id="student-card-{{ i }}">
+                <div class="student-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h4>student{{ i }}</h4>
+                <small>ID: STU{{ "%02d" % i }}</small>
+            </div>
+            {% endfor %}
+        </div>
+        <select id="student" class="form-select" style="display: none;">
+            <option value="">-- Select Student --</option>
+            {% for i in range(1,24) %}
+                <option value="student{{ i }}">student{{ i }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group" style="text-align: center;">
+        <button id="startBtn" class="btn btn-primary btn-lg">
+            <i class="fas fa-camera"></i>
+            Start Face Recognition
+        </button>
+    </div>
+
+    <div id="cameraSection" style="display:none;">
+        <div class="camera-container">
+            <video id="video" width="640" height="480" autoplay></video>
+            <div class="video-overlay">
+                <i class="fas fa-video"></i>
+                Live Camera Feed - Position face in frame
+            </div>
+        </div>
+        
+        <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+
+        <div style="text-align: center; margin: 2rem 0;">
+            <button id="captureBtn" class="btn btn-success btn-lg">
+                <i class="fas fa-camera-retro"></i>
+                Capture & Mark Attendance
+            </button>
+        </div>
+    </div>
+
+    <div id="resultSection" style="display: none;">
+        <div class="alert" id="resultAlert">
+            <i id="resultIcon" class="fas"></i>
+            <span id="resultText"></span>
+        </div>
+        
+        <div style="text-align: center;">
+            <button id="newBtn" class="btn btn-warning">
+                <i class="fas fa-redo"></i>
+                Mark Another Student
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedStudent = "";
+let selectedCard = null;
+
+function selectStudent(studentId) {
+    selectedStudent = studentId;
+    document.getElementById('student').value = studentId;
+    
+    // Update card selection
+    if (selectedCard) {
+        selectedCard.classList.remove('selected');
+    }
+    
+    selectedCard = document.getElementById(`student-card-${studentId.replace('student', '')}`);
+    selectedCard.classList.add('selected');
+    
+    // Enable the start button
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('startBtn').classList.remove('btn-warning');
+    document.getElementById('startBtn').classList.add('btn-primary');
+}
+
+document.getElementById('startBtn').onclick = async () => {
+    if (!selectedStudent) {
+        alert("Please select a student first!");
+        return;
+    }
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "user" } 
+        });
+        document.getElementById("video").srcObject = stream;
+        document.getElementById("cameraSection").style.display = "block";
+        
+        // Scroll to camera section
+        document.getElementById("cameraSection").scrollIntoView({ behavior: 'smooth' });
+    } catch (error) {
+        alert("Error accessing camera: " + error.message);
+    }
+};
+
+document.getElementById("captureBtn").onclick = () => {
+    const canvas = document.getElementById("canvas");
+    const video = document.getElementById("video");
+    const context = canvas.getContext("2d");
+    
+    // Draw video frame to canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Show processing indicator
+    document.getElementById('captureBtn').innerHTML = 
+        '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    document.getElementById('captureBtn').disabled = true;
+
+    fetch("/process-attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            student: selectedStudent,
+            image: canvas.toDataURL("image/jpeg")
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const resultAlert = document.getElementById('resultAlert');
+        const resultIcon = document.getElementById('resultIcon');
+        const resultText = document.getElementById('resultText');
+        
+        if (data.status === "Present") {
+            resultAlert.className = "alert alert-success";
+            resultIcon.className = "fas fa-check-circle";
+            resultText.textContent = `✓ ${selectedStudent} marked as PRESENT!`;
+        } else {
+            resultAlert.className = "alert alert-danger";
+            resultIcon.className = "fas fa-times-circle";
+            resultText.textContent = `✗ Attendance failed for ${selectedStudent}`;
+        }
+        
+        document.getElementById('resultSection').style.display = 'block';
+        
+        // Stop camera stream
+        const stream = video.srcObject;
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Reset button
+        document.getElementById('captureBtn').innerHTML = 
+            '<i class="fas fa-camera-retro"></i> Capture & Mark Attendance';
+        document.getElementById('captureBtn').disabled = false;
+        
+        // Scroll to result
+        document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+    })
+    .catch(error => {
+        alert("Error: " + error.message);
+    });
+};
+
+document.getElementById("newBtn").onclick = () => {
+    location.reload();
+};
+</script>
+{% endblock %}

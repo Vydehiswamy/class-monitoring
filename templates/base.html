@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Attendance System | College Classroom Monitoring</title>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+<body>
+
+<!-- NAVBAR -->
+{% if session.get('admin') %}
+<nav class="navbar">
+    <div class="navbar-brand">
+        <i class="fas fa-graduation-cap"></i>
+        <span>Smart Classroom Monitoring</span>
+    </div>
+    
+    <div class="nav-links">
+        
+        <a href="{{ url_for('attendance') }}"
+           class="{% if request.endpoint == 'attendance' %}active{% endif %}">
+            <i class="fas fa-clipboard-check"></i> Attendance
+        </a>
+        <a href="{{ url_for('classroom') }}"
+           class="{% if request.endpoint == 'classroom' %}active{% endif %}">
+            <i class="fas fa-chalkboard-teacher"></i> Classroom
+        </a>
+        <a href="{{ url_for('dashboard') }}" 
+           class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
+            <i class="fas fa-chart-line"></i> Dashboard
+        </a>
+
+        <a href="{{ url_for('logout') }}" class="btn-danger">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </div>
+</nav>
+{% endif %}
+
+<!-- MAIN CONTENT -->
+<div class="container">
+    {% block content %}
+    <!-- Page content will be injected here -->
+    {% endblock %}
+</div>
+
+<!-- FOOTER -->
+{% if session.get('admin') %}
+<footer style="text-align: center; padding: 2rem; background: var(--primary-blue); color: white; margin-top: 3rem;">
+    <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 1rem;">
+        <span><i class="fas fa-university"></i> College Smart Monitoring System</span>
+        <span><i class="fas fa-users"></i> Student Attendance Tracking</span>
+        <span><i class="fas fa-brain"></i> AI-Powered Analytics</span>
+    </div>
+    <p>© 2024 Smart Attendance System | Classroom Monitoring & Analytics Platform</p>
+</footer>
+{% endif %}
+
+</body>
+</html>
